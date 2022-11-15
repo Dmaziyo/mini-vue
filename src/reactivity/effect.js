@@ -30,9 +30,8 @@ export function track(target, key) {
   if (!dep) {
     depsMap.set(key, (dep = new Set()))
   }
-  if (!dep.has(activeEffect)) {
-    dep.add(activeEffect)
-  }
+
+  dep.add(activeEffect)
 }
 
 // 触发执行effect
