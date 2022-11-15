@@ -1,12 +1,9 @@
-import _ from 'lodash'
-import { add } from './add'
-function component() {
-  const element = document.createElement('div')
+import { reactive } from './reactivity/reactive'
+import { effect } from './reactivity/effect'
 
-  // lodash 在当前 script 中使用 import 引入
-  element.innerHTML = ['Hello', 'webpfdsfack'].join(' ')
-  console.log(element)
-  return element
-}
-
-document.body.appendChild(component())
+const observed = (window.observed = reactive({ count: 0 }))
+effect(() => {
+  // effect内的fn默认自动执行一次,将count(也就是reactive的prop进行绑定)
+  // 之后每次prop更新的时候,都会执行fn
+  console.log('observed.count =', observed.count)
+})
