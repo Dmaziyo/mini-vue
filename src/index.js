@@ -1,9 +1,14 @@
 import { reactive } from './reactivity/reactive'
 import { effect } from './reactivity/effect'
 
-const observed = (window.observed = reactive({ count: 0 }))
+const observed = reactive({ a: 'a', b: 'b' })
 effect(() => {
-  // effect内的fn默认自动执行一次,将count(也就是reactive的prop进行绑定)
-  // 之后每次prop更新的时候,都会执行fn
-  console.log('observed.count =', observed.count)
+  console.log(observed.a + '非嵌套')
+  effect(() => {
+    console.log(observed.b + '嵌套的')
+  })
 })
+observed.a = 2
+// a嵌套的
+// b非嵌套
+//打印2嵌套的

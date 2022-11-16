@@ -18,7 +18,7 @@ module.exports = {
     })
   ],
   devServer: {
-    // 设置内容的根路径
+    // 设置内容的根路径,使用该目录中真实存在的静态资源,而不是虚拟资源
     contentBase: './dist'
   }
 }

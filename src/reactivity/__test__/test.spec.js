@@ -103,4 +103,19 @@ describe('effect', () => {
     observed.anotherValue = 1
     expect(value).toBe(1)
   })
+  test('嵌套effect', () => {
+    console.log = jest.fn()
+    const observed = reactive({ a: 1, b: 1 })
+    effect(() => {
+      effect(() => {
+        console.log(observed.b + '嵌套的')
+      })
+      console.log(observed.a + '非嵌套')
+    })
+    observed.a = 5
+    expect(console.log.mock.calls[0][0]).toBe('1嵌套的')
+    expect(console.log.mock.calls[1][0]).toBe('1非嵌套')
+    expect(console.log.mock.calls[2][0]).toBe('1嵌套的')
+    expect(console.log.mock.calls[3][0]).toBe('5非嵌套')
+  })
 })

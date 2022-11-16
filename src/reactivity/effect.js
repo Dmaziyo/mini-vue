@@ -1,13 +1,15 @@
+let effectStack = []
 let activeEffect
-
 export function effect(fn) {
   const effectFn = () => {
     try {
-      activeEffect = effectFn
+      effectStack.push(effectFn)
+      activeEffect = effectStack[effectStack.length - 1]
       // 执行fn(),调用reactive的时候同时将activeEffect绑定
       return fn()
     } finally {
-      activeEffect = undefined
+      effectStack.pop()
+      activeEffect = effectStack[effectStack.length - 1]
     }
   }
   effectFn()
