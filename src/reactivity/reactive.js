@@ -1,4 +1,4 @@
-import { isObject } from '../utils'
+import { isObject, hasChanged } from '../utils'
 import { track, trigger } from './effect'
 
 export const IS_REACTIVE = '__isReactive'
@@ -18,6 +18,7 @@ export function reactive(target) {
   }
   const proxy = new Proxy(target, {
     get(target, key, receiver) {
+      // 相当于添加了一个实际不存在的prop
       if (key === IS_REACTIVE) {
         return true
       }
@@ -28,8 +29,12 @@ export function reactive(target) {
       return isObject(res) ? reactive(res) : res
     },
     set(target, key, value, receiver) {
+      const oldValue = target[key]
       const res = Reflect.set(target, key, value, receiver)
-      trigger(target, key, value)
+      if (hasChanged(oldValue, value)) {
+        // 如果触发的是变量,那么因为没绑定effect,不会执行操作
+        trigger(target, key, value)
+      }
       return res
     }
   })

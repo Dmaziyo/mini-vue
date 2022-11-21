@@ -1,6 +1,7 @@
 let effectStack = []
 let activeEffect
-export function effect(fn) {
+// 调用bind函数,返回effect函数
+export function effect(fn, option = {}) {
   const effectFn = () => {
     try {
       effectStack.push(effectFn)
@@ -12,7 +13,11 @@ export function effect(fn) {
       activeEffect = effectStack[effectStack.length - 1]
     }
   }
-  effectFn()
+  // 用于computed的懒加载
+  if (!option.lazy) {
+    effectFn()
+  }
+  effectFn.scheduler = option.scheduler
   return effectFn
 }
 
@@ -32,7 +37,7 @@ export function track(target, key) {
   if (!dep) {
     depsMap.set(key, (dep = new Set()))
   }
-
+  // 如果之前添加了activeEffect,那么就不会再添加进去
   dep.add(activeEffect)
 }
 
@@ -47,6 +52,10 @@ export function trigger(target, key) {
     return
   }
   dep.forEach(effectFn => {
-    effectFn()
+    if (effectFn.scheduler) {
+      effectFn.scheduler()
+    } else {
+      effectFn()
+    }
   })
 }
