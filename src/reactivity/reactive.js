@@ -29,7 +29,6 @@ export function reactive(target) {
       return isObject(res) ? reactive(res) : res
     },
     set(target, key, value, receiver) {
-      debugger
       const oldValue = target[key]
       const res = Reflect.set(target, key, value, receiver)
       if (hasChanged(oldValue, value)) {
