@@ -4,5 +4,6 @@ export function isObject(raw) {
 }
 
 export function hasChanged(value, oldValue) {
-  return value !== oldValue && !(isNaN(value) && isNaN(oldValue))
+  //确保没有都是NaN
+  return value !== oldValue && (value === value || oldValue === oldValue)
 }

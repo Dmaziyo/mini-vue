@@ -9,7 +9,7 @@ export function reactive(target) {
     return target
   }
   //传入的obj是已经代理了的
-  if (target[IS_REACTIVE]) {
+  if (isReactive(target)) {
     return target
   }
   // 传入的obj虽然不是被代理的,但是该obj已经被代理了
@@ -29,6 +29,7 @@ export function reactive(target) {
       return isObject(res) ? reactive(res) : res
     },
     set(target, key, value, receiver) {
+      debugger
       const oldValue = target[key]
       const res = Reflect.set(target, key, value, receiver)
       if (hasChanged(oldValue, value)) {
@@ -40,4 +41,8 @@ export function reactive(target) {
   })
   reactiveMap.set(target, proxy)
   return proxy
+}
+
+export function isReactive(target) {
+  return !!(target && target.__isReactive)
 }
