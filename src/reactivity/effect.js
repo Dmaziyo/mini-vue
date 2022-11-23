@@ -1,18 +1,15 @@
 let effectStack = []
 let activeEffect
-let cur_fn = []
 // 调用bind函数,返回effect函数
 export function effect(fn, option = {}) {
   const effectFn = () => {
     try {
       effectStack.push(effectFn)
       activeEffect = effectStack[effectStack.length - 1]
-      cur_fn.push(fn)
       // 执行fn(),调用reactive的时候同时将activeEffect绑定
       return fn()
     } finally {
       effectStack.pop()
-      cur_fn.pop()
       activeEffect = effectStack[effectStack.length - 1]
     }
   }
@@ -28,7 +25,6 @@ const targetMap = new WeakMap()
 
 // 将调用的属性值与effectFn建立联系
 export function track(target, key) {
-  console.log(cur_fn)
   if (!activeEffect) {
     return
   }
@@ -53,7 +49,6 @@ export function trigger(target, key) {
   }
   const dep = depsMap.get(key)
   if (!dep) {
-    image.png
     return
   }
   dep.forEach(effectFn => {
