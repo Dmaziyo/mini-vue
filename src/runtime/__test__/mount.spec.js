@@ -96,4 +96,29 @@ describe('mount', () => {
     expect(getTag(children[3])).toBe('h1')
     expect(children[1].textContent).toBe('hello world')
   })
+  test('mount component 1', () => {
+    const root = document.createElement('div')
+    const Comp = {
+      render() {
+        return h('div')
+      }
+    }
+    const vnode = h(Comp)
+    render(vnode, root)
+    const el = root.children[0]
+    expect(getTag(el)).toBe('div')
+  })
+  test('mount component 2', () => {
+    const root = document.createElement('div')
+    const Comp = {
+      props: ['foo'],
+      render(ctx) {
+        return h('div', null, ctx.foo)
+      }
+    }
+    const vnode = h(Comp, { foo: 'foo' })
+    render(vnode, root)
+    const el = root.firstChild
+    expect(el.firstChild.textContent).toBe('foo')
+  })
 })

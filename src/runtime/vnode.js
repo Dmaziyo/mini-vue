@@ -1,7 +1,7 @@
 import { isFunction, isObject } from '../utils'
 
-export const Text = Symbol('text')
-export const Fragment = Symbol('fragment')
+export const Text = Symbol('Text')
+export const Fragment = Symbol('Fragment')
 
 export const ShapeFlags = {
   ELEMENT: 1,
@@ -17,8 +17,9 @@ export const ShapeFlags = {
 
 /**
  * 生成相应的VNode模型,之所以采用bitwise operation 是为了快速检测子元素的类型
- * @param {*} type
- * @param {*} props
+ * @param {string | Text | Fragment | object |Function} type
+ * @param {Record<string,any> | null} props
+ * @param {string | Array | null}
   props:{
     class: str
     style:{
@@ -33,7 +34,6 @@ export const ShapeFlags = {
  */
 export function h(type, props = null, children = null) {
   let shapeFlag = 0
-  debugger
   if (typeof type === 'string') {
     shapeFlag = ShapeFlags.ELEMENT
   } else if (type === Text) {
