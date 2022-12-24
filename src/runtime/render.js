@@ -166,7 +166,7 @@ function patch(n1, n2, container) {
     processComponent(n1, n2, container)
   } else if (shapeFlag & ShapeFlags.TEXT) {
     processText(n1, n2, container)
-  } else if (shapeFlag & shapeFlag.FRAGMENT) {
+  } else if (shapeFlag & ShapeFlags.FRAGMENT) {
     processFragment(n1, n2, container)
   } else if (shapeFlag & ShapeFlags.ELEMENT) {
     // dom元素的处理
@@ -193,7 +193,7 @@ function processFragment(n1, n2, container) {
     const fragmentEndAnchor = (n2.anchor = document.createTextNode(''))
     // 作为空节点抢占位置
     container.appendChild(fragmentStartAnchor)
-    mountArrayChildren(n2.children, container)
+    mountChildren(n2.children, container)
     container.appendChild(fragmentEndAnchor)
   } else {
     patchChildren(n1, n2, container)
