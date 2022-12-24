@@ -96,6 +96,16 @@ describe('mount', () => {
     expect(getTag(children[3])).toBe('h1')
     expect(children[1].textContent).toBe('hello world')
   })
+  test('dom props and attr', () => {
+    const root = document.createElement('div')
+    document.body.appendChild(root)
+    render(h('div', { id: 'a', name: 'b' }), root)
+    const div = root.children[0]
+    expect(document.getElementById('a')).toBe(div)
+    expect(div.id).toBe('a')
+    expect(div.name).toBe(undefined)
+    expect(div.getAttribute('name')).toBe('b')
+  })
   test('mount component 1', () => {
     const root = document.createElement('div')
     const Comp = {

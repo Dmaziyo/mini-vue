@@ -141,6 +141,7 @@ function unmount(vnode) {
 function unmountComponent(vnode) {}
 
 function unmountFragment(vnode) {
+  // 从startAnchor开始清除,直至清除Anchor包围的DOM数组
   let { el: cur, anchor: end } = vnode
   while (cur !== end) {
     let next = cur.nextSibling
