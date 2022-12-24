@@ -3,6 +3,10 @@ export function isObject(raw) {
   return typeof raw === 'object' && raw !== null
 }
 
+export function isEmpty(object) {
+  return Object.keys(object).length === 0
+}
+
 export function isFunction(raw) {
   return typeof raw === 'function'
 }

@@ -1,3 +1,4 @@
+import { isEmpty } from '../utils'
 import { h, Text, Fragment, ShapeFlags } from './vnode'
 /**
  *
@@ -186,8 +187,8 @@ function processComponent(n1, n2, container) {
 // todo
 function patchElement(n1, n2, container) {
   n2.el = n1.el
-  patchProps(n2, el, n1.props, n2.props)
-  patchChildren()
+  patchProps(n2.el, n1.props, n2.props)
+  // patchChildren()
   const { shapeFlag } = n2
   if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
   }
@@ -195,8 +196,10 @@ function patchElement(n1, n2, container) {
 
 function patchProps(el, oldProps, newProps) {
   // 防止为null,并且null不能在一开始就设置默认参数,所以采用es5写法
+  debugger
   oldProps = oldProps || {}
   newProps = newProps || {}
+  if (oldProps === newProps || (isEmpty(oldProps) && isEmpty(newProps))) return
   for (const key in newProps) {
     // 不懂!
     if (key === 'key') {
@@ -236,31 +239,36 @@ function pathDomProp(el, key, prev, next) {
       if (!next) {
         el.removeAttribute('style')
       } else {
+        for (const styleName in next) {
+          el.style[styleName] = next[styleName]
+        }
         // 移除prev有但next没有的
         if (prev) {
           for (const styleName in prev) {
-            el.style[styleName] = ''
+            if (next[styleName] == null) {
+              el.style[styleName] = ''
+            }
           }
-        }
-        for (const styleName in next) {
-          el.style[styleName] = next[styleName]
         }
       }
       break
     default:
-      if (key.startWith('on')) {
-        // 事件
-        const eventName = key.slice(2).toLowerCase()
-        if (prev) {
-          el.removeListener(eventName, prev)
-        }
-        if (next) {
-          el.addEventListener(eventName, next)
+      if (key.startsWith('on')) {
+        // 先判断是否是同一个cb
+        debugger
+        if (prev !== next) {
+          const eventName = key.slice(2).toLowerCase()
+          if (prev) {
+            el.removeEventListener(eventName, prev)
+          }
+          if (next) {
+            el.addEventListener(eventName, next)
+          }
         }
       }
       // 判断特殊boolean属性
       else if (domPropsRE.test(key)) {
-        el[key] = next || ''
+        el[key] = next
       } else {
         if (next == null) {
           el.removeAttribute(key)
