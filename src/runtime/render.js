@@ -21,6 +21,31 @@ export function render(vnode, container) {
 }
 
 /**
+ *
+ * @param {*} n1 prevNode
+ * @param {*} n2 new Vnode
+ * @param {*} container
+ */
+function patch(n1, n2, container) {
+  if (n1 && !isSameVNodeType(n1, n2)) {
+    unmount(n1)
+    n1 = null
+  }
+  // 根据元素的类型来进行不同的patch操作
+  const { shapeFlag } = n2
+  if (shapeFlag & ShapeFlags.COMPONENT) {
+    processComponent(n1, n2, container)
+  } else if (shapeFlag & ShapeFlags.TEXT) {
+    processText(n1, n2, container)
+  } else if (shapeFlag & ShapeFlags.FRAGMENT) {
+    processFragment(n1, n2, container)
+  } else if (shapeFlag & ShapeFlags.ELEMENT) {
+    // dom元素的处理
+    processElement(n1, n2, container)
+  }
+}
+
+/**
  * 创建真正的Node,并且将vnode的props添加进去,然后把node添加至parent中
  * @param {*} vnode
  * @param {*} parent
@@ -41,45 +66,10 @@ function mountElement(vnode, container) {
     mountChildren(children, el)
   }
   if (props) {
-    mountProps(el, props)
+    patchProps(el, null, props)
   }
   vnode.el = el
   container.appendChild(el)
-}
-
-// 因为这些属性的值是boolean,而setAttribute默认是字符串
-const domPropsRE = /[A-Z]|^(value|checked|selected|muted)$/
-
-/**
- * 绑定props,并且特殊情况的prop特殊处理
- * @param {*} el
- * @param {*} props
- */
-
-function mountProps(el, props) {
-  for (const key in props) {
-    const value = props[key]
-    switch (key) {
-      case 'class':
-        el.className = value
-        break
-      case 'style':
-        for (const styleName in value) {
-          el.style[styleName] = value[styleName]
-        }
-        break
-      default:
-        if (key.startsWith('on')) {
-          el.addEventListener(key.slice(2).toLowerCase(), value)
-        }
-        // 单独设置值类型为boolean的属性
-        else if (domPropsRE.test(key)) {
-          el[key] = value
-        } else {
-          el.setAttribute(key, value)
-        }
-    }
-  }
 }
 
 /**
@@ -150,30 +140,6 @@ function unmountFragment(vnode) {
   }
   end.parentNode.removeChild(end)
 }
-/**
- *
- * @param {*} n1 prevNode
- * @param {*} n2 new Vnode
- * @param {*} container
- */
-function patch(n1, n2, container) {
-  if (n1 && !isSameVNodeType(n1, n2)) {
-    unmount(n1)
-    n1 = null
-  }
-  // 根据元素的类型来进行不同的patch操作
-  const { shapeFlag } = n2
-  if (shapeFlag & ShapeFlags.COMPONENT) {
-    processComponent(n1, n2, container)
-  } else if (shapeFlag & ShapeFlags.TEXT) {
-    processText(n1, n2, container)
-  } else if (shapeFlag & ShapeFlags.FRAGMENT) {
-    processFragment(n1, n2, container)
-  } else if (shapeFlag & ShapeFlags.ELEMENT) {
-    // dom元素的处理
-    processElement(n1, n2, container)
-  }
-}
 
 function isSameVNodeType(n1, n2) {
   return n1.type === n2.type
@@ -218,4 +184,91 @@ function processComponent(n1, n2, container) {
 }
 
 // todo
-function patchElement(n1, n2, container) {}
+function patchElement(n1, n2, container) {
+  n2.el = n1.el
+  patchProps(n2, el, n1.props, n2.props)
+  patchChildren()
+  const { shapeFlag } = n2
+  if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+  }
+}
+
+function patchProps(el, oldProps, newProps) {
+  // 防止为null,并且null不能在一开始就设置默认参数,所以采用es5写法
+  oldProps = oldProps || {}
+  newProps = newProps || {}
+  for (const key in newProps) {
+    // 不懂!
+    if (key === 'key') {
+      continue
+    }
+    const prev = oldProps[key]
+    const next = newProps[key]
+    if (prev !== next) {
+      pathDomProp(el, key, prev, next)
+    }
+  }
+  for (const key in oldProps) {
+    if (key !== 'key' && !(key in newProps)) {
+      pathDomProp(el, key, oldProps[key], null)
+    }
+  }
+}
+
+// 因为这些属性的值是boolean,而setAttribute默认是字符串
+const domPropsRE = /[A-Z]|^(value|checked|selected|muted)$/
+
+/**
+ * 绑定prop,并且特殊情况的prop特殊处理
+ * @param {*} el
+ * @param {*} key
+ * @param {*} prev oldValue
+ * @param {*} next newValue
+ */
+
+function pathDomProp(el, key, prev, next) {
+  switch (key) {
+    case 'class':
+      el.className = next || ''
+      break
+    case 'style':
+      // style对象
+      if (!next) {
+        el.removeAttribute('style')
+      } else {
+        // 移除prev有但next没有的
+        if (prev) {
+          for (const styleName in prev) {
+            el.style[styleName] = ''
+          }
+        }
+        for (const styleName in next) {
+          el.style[styleName] = next[styleName]
+        }
+      }
+      break
+    default:
+      if (key.startWith('on')) {
+        // 事件
+        const eventName = key.slice(2).toLowerCase()
+        if (prev) {
+          el.removeListener(eventName, prev)
+        }
+        if (next) {
+          el.addEventListener(eventName, next)
+        }
+      }
+      // 判断特殊boolean属性
+      else if (domPropsRE.test(key)) {
+        el[key] = next || ''
+      } else {
+        if (next == null) {
+          el.removeAttribute(key)
+        } else {
+          // 因为boolean设置false在setAttribute上还是为字符串'false'
+          el.setAttribute(key, next)
+        }
+      }
+      break
+  }
+}
