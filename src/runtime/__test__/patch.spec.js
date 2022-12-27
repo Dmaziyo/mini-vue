@@ -5,11 +5,15 @@ function getTag(el) {
   return el.tagName.toLowerCase()
 }
 
+let root
+beforeEach(() => {
+  root = document.createElement('div')
+})
+
 // 测试添加props,删除props
 describe('patch props', () => {
   test('patch class', () => {
     let el
-    const root = document.createElement('div')
     render(h('div'), root)
     el = root.children[0]
     expect(el.className).toBeFalsy()
@@ -134,5 +138,28 @@ describe('patch props', () => {
     expect(dummy).toBe(2)
     triggerMousedown()
     expect(dummy).toBe(12)
+  })
+})
+
+describe('patch unkeyed nodes', () => {
+  test('should patch previously empty children', () => {
+    render(h('div', null, []), root)
+    expect(root.children[0].textContent).toBeFalsy()
+
+    render(h('div', null, 'hello'), root)
+    expect(root.children[0].textContent).toBe('hello')
+  })
+
+  test('should patch previously null children', () => {
+    render(h('div'), root)
+
+    render(h('div', null, 'hello'), root)
+    expect(root.children[0].textContent).toBe('hello')
+  })
+  test('array children -> text Children', () => {
+    render(h('div', null, [h('p')]), root)
+
+    render(h('div', null, 'hello'), root)
+    expect(root.children[0].textContent).toBe('hello')
   })
 })

@@ -6,6 +6,7 @@ import { h, Text, Fragment, ShapeFlags } from './vnode'
  * @param {*} container  根元素DOM
  */
 export function render(vnode, container) {
+  // debugger
   // 现在的render就是与container之前的打补丁
   const prevVNode = container._vnode
   // 如果元素不存在,那么就意味解绑
@@ -90,6 +91,7 @@ function mountTextNode(vnode, container) {
  * @param {*} container 上一级的根元素
  */
 function mountChildren(children, container) {
+  // debugger
   children.forEach(child => {
     patch(null, child, container)
   })
@@ -188,15 +190,12 @@ function processComponent(n1, n2, container) {
 function patchElement(n1, n2, container) {
   n2.el = n1.el
   patchProps(n2.el, n1.props, n2.props)
-  // patchChildren()
-  const { shapeFlag } = n2
-  if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-  }
+  patchChildren(n1, n2, n2.el)
 }
 
 function patchProps(el, oldProps, newProps) {
   // 防止为null,并且null不能在一开始就设置默认参数,所以采用es5写法
-  debugger
+  // debugger
   oldProps = oldProps || {}
   newProps = newProps || {}
   if (oldProps === newProps || (isEmpty(oldProps) && isEmpty(newProps))) return
@@ -255,7 +254,7 @@ function pathDomProp(el, key, prev, next) {
     default:
       if (key.startsWith('on')) {
         // 先判断是否是同一个cb
-        debugger
+        // debugger
         if (prev !== next) {
           const eventName = key.slice(2).toLowerCase()
           if (prev) {
@@ -278,5 +277,63 @@ function pathDomProp(el, key, prev, next) {
         }
       }
       break
+  }
+}
+function patchChildren(n1, n2, container) {
+  // 排除了n1是null的可能了,因为patchElement里面会进行一个判断
+  const { shapeFlag: prevShapeFlag, children: c1 } = n1
+  const { shapeFlag, children: c2 } = n2
+  // 每一种子元素要应对三种:text_children,Array_Children,NULL
+  if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+    if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      unmountChildren(c1)
+    }
+    if (c2 !== c1) {
+      container.textContent = c2
+    }
+  }
+  // c2可能是ARRAY or NULL
+  else {
+    // c1 is Array -> c2 is Array or null
+    if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        patchUnkeyedChildren(c1, c2, container)
+      } else {
+        unmountChildren(c1)
+      }
+    }
+    // c1 is text or NULL -> c2 is Array or null
+    else {
+      if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+        container.textContent = ''
+      }
+      if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        mountChildren(c2, container)
+      }
+    }
+  }
+}
+
+function unmountChildren(children) {
+  children.forEach(child => unmount(child))
+}
+
+// patch children_array
+function patchUnkeyedChildren(c1, c2, container) {
+  const oldLength = c1.length
+  const newLength = c2.length
+  //  将长度相同的前面的vnode进行diff patch
+  const commonLength = Math.min(oldLength, newLength)
+  console.log(container.innerHTML)
+  for (let i = 0; i < commonLength; i++) {
+    // 如果不是相同类型,那么就会添加到后面,有bug
+    patch(c1[i], c2[i], container)
+  }
+  console.log(container.innerHTML)
+  // 将新的元素挂载到后面去
+  if (newLength > oldLength) {
+    mountChildren(c2.slice(commonLength), container)
+  } else if (newLength < oldLength) {
+    unmountChildren(c1.slice(commonLength))
   }
 }
