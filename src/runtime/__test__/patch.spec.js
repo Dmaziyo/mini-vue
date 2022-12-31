@@ -10,7 +10,6 @@ beforeEach(() => {
   root = document.createElement('div')
 })
 
-// 测试添加props,删除props
 describe('patch props', () => {
   test('patch class', () => {
     let el
@@ -25,7 +24,6 @@ describe('patch props', () => {
     render(h('div', { class: '' }), root)
     el = root.children[0]
     expect(el.className).toBe('')
-    render(h('div', { class: 'a' }), root)
 
     render(h('div', { class: 'a' }), root)
     el = root.children[0]
@@ -39,9 +37,9 @@ describe('patch props', () => {
     el = root.children[0]
     expect(el.className).toBeFalsy()
   })
+
   test('patch style', () => {
     let el
-    const root = document.createElement('div')
     render(h('div'), root)
     el = root.children[0]
     expect(el.style.color).toBeFalsy()
@@ -82,60 +80,67 @@ describe('patch props', () => {
     expect(el.style.color).toBe('yellow')
     expect(el.style.border).toBeFalsy()
     expect(el.style.fontSize).toBeFalsy()
+
+    render(h('div'), root)
+    el = root.children[0]
+    expect(el.style.color).toBeFalsy()
+    expect(el.getAttribute('style')).toBeFalsy()
   })
+
   test('patch props and attrs', () => {
     let el
-    const root = document.createElement('div')
     render(h('div'), root)
     el = root.children[0]
     expect(el.id).toBeFalsy()
     expect(el.getAttribute('foo')).toBeFalsy()
 
-    // 赋值
     render(h('div', { id: 'a', foo: 'foo' }), root)
     el = root.children[0]
     expect(el.id).toBe('a')
     expect(el.getAttribute('foo')).toBe('foo')
 
-    // 修改值
     render(h('div', { id: 'b', bar: 'bar' }), root)
     el = root.children[0]
     expect(el.id).toBe('b')
     expect(el.getAttribute('foo')).toBeFalsy()
     expect(el.getAttribute('bar')).toBe('bar')
 
-    // 清空props
     render(h('div'), root)
     el = root.children[0]
     expect(el.id).toBeFalsy()
     expect(el.getAttribute('foo')).toBeFalsy()
     expect(el.getAttribute('bar')).toBeFalsy()
   })
+
   test('patch event', () => {
     let el,
       dummy = 0
-    const root = document.createElement('div')
     render(h('div', { onClick: () => dummy++ }), root)
     el = root.children[0]
     el.click()
     expect(dummy).toBe(1)
 
-    // 测试事件是否会重复绑定
+    // 事件不会被绑定两次
     render(h('div', { onClick: () => dummy++ }), root)
-
     el = root.children[0]
     el.click()
     expect(dummy).toBe(2)
 
-    // 测试删除事件
     const triggerMousedown = () => {
       const event = new Event('mousedown')
       el.dispatchEvent(event)
     }
+
     render(h('div', { onMousedown: () => (dummy += 10) }), root)
     el = root.children[0]
     el.click()
     expect(dummy).toBe(2)
+    triggerMousedown()
+    expect(dummy).toBe(12)
+
+    render(h('div'), root)
+    el = root.children[0]
+    el.click()
     triggerMousedown()
     expect(dummy).toBe(12)
   })
@@ -156,19 +161,24 @@ describe('patch unkeyed nodes', () => {
     render(h('div', null, 'hello'), root)
     expect(root.children[0].textContent).toBe('hello')
   })
-  test('array children -> text Children', () => {
+
+  test('array children -> text children', () => {
     render(h('div', null, [h('p')]), root)
+    expect(getTag(root.children[0].children[0])).toBe('p')
 
     render(h('div', null, 'hello'), root)
     expect(root.children[0].textContent).toBe('hello')
   })
+
   test('patch test 1', () => {
     render(h('div', null, [h('p', null, 'item1'), h('p', null, 'item2')]), root)
     expect(root.innerHTML).toBe('<div><p>item1</p><p>item2</p></div>')
+
     render(h('div', null, [h('span', null, 'item3'), h('p', null, 'item2')]), root)
     expect(root.innerHTML).toBe('<div><span>item3</span><p>item2</p></div>')
   })
-  test('patch test', () => {
+
+  test('patch test 2', () => {
     render(
       h('div', null, [
         h('div', null, 'start'),
@@ -177,10 +187,11 @@ describe('patch unkeyed nodes', () => {
           h('li', null, [h('span', null, 'item1')]),
           h('li', null, [h('span', null, 'item2'), h('span', null, 'item3')]),
           h('li', null, [h('span', null, 'item4')]),
-          h(Text, null, 'end')
+          h(Text, null, 'item5')
         ]),
         h('div', null, 'end')
-      ])
+      ]),
+      root
     )
     expect(root.innerHTML).toBe(
       '<div><div>start</div>' +
@@ -189,6 +200,7 @@ describe('patch unkeyed nodes', () => {
         '<li><span>item4</span></li>item5</ul>' +
         '<div>end</div></div>'
     )
+
     render(
       h('div', null, [
         h('div', null, 'end'),

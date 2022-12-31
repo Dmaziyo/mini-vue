@@ -6,7 +6,6 @@ import { h, Text, Fragment, ShapeFlags } from './vnode'
  * @param {*} container  根元素DOM
  */
 export function render(vnode, container) {
-  // debugger
   // 现在的render就是与container之前的打补丁
   const prevVNode = container._vnode
   // 如果元素不存在,那么就意味解绑
@@ -27,23 +26,27 @@ export function render(vnode, container) {
  * @param {*} n1 prevNode
  * @param {*} n2 new Vnode
  * @param {*} container
+ * @param {*} anchor
  */
-function patch(n1, n2, container) {
+function patch(n1, n2, container, anchor) {
+  // 如果存在prevNode且不是相同类型,那么anchor也可以找到,如果没有anchor,那么就是唯一的子元素
   if (n1 && !isSameVNodeType(n1, n2)) {
+    // 如果不是sameType,就进行patch操作即可
+    anchor = (n1.anchor || n1.el).nextSibling
     unmount(n1)
     n1 = null
   }
   // 根据元素的类型来进行不同的patch操作
   const { shapeFlag } = n2
   if (shapeFlag & ShapeFlags.COMPONENT) {
-    processComponent(n1, n2, container)
+    processComponent(n1, n2, container, anchor)
   } else if (shapeFlag & ShapeFlags.TEXT) {
-    processText(n1, n2, container)
+    processText(n1, n2, container, anchor)
   } else if (shapeFlag & ShapeFlags.FRAGMENT) {
-    processFragment(n1, n2, container)
+    processFragment(n1, n2, container, anchor)
   } else if (shapeFlag & ShapeFlags.ELEMENT) {
     // dom元素的处理
-    processElement(n1, n2, container)
+    processElement(n1, n2, container, anchor)
   }
 }
 
@@ -56,7 +59,7 @@ function patch(n1, n2, container) {
 /**
  * DOM子元素类型: text | DOM
  */
-function mountElement(vnode, container) {
+function mountElement(vnode, container, anchor) {
   // 判断有无子元素,进一步判断是Text Children or Array Children
   const { type, props, children, shapeFlag } = vnode
   //   创建指定元素类型
@@ -71,7 +74,7 @@ function mountElement(vnode, container) {
     patchProps(el, null, props)
   }
   vnode.el = el
-  container.appendChild(el)
+  container.insertBefore(el, anchor || null)
 }
 
 /**
@@ -79,10 +82,10 @@ function mountElement(vnode, container) {
  * @param {*} vnode
  * @param {*} parent
  */
-function mountTextNode(vnode, container) {
+function mountTextNode(vnode, container, anchor) {
   const textNode = document.createTextNode(vnode.children)
   vnode.el = textNode
-  container.appendChild(textNode)
+  container.insertBefore(textNode, anchor || null)
 }
 
 /**
@@ -90,13 +93,14 @@ function mountTextNode(vnode, container) {
  * @param {*} children
  * @param {*} container 上一级的根元素
  */
-function mountChildren(children, container) {
+function mountChildren(children, container, anchor) {
   // debugger
   children.forEach(child => {
-    patch(null, child, container)
+    patch(null, child, container, anchor)
   })
 }
 
+// TODO
 function mountComponent(vnode, container) {
   if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
     mountStatefulComponent(vnode, container)
@@ -148,31 +152,34 @@ function isSameVNodeType(n1, n2) {
   return n1.type === n2.type
 }
 
-function processElement(n1, n2, container) {
+function processElement(n1, n2, container, anchor) {
   if (n1 == null) {
     // 说明已经大变样了,直接重新挂载
-    mountElement(n2, container)
+    // 只有在mount newVNode的时候需要记录anchor
+    mountElement(n2, container, anchor)
   } else {
-    patchElement(n1, n2, container)
+    patchElement(n1, n2)
   }
 }
 
-function processFragment(n1, n2, container) {
+function processFragment(n1, n2, container, anchor) {
+  const fragmentStartAnchor = (n2.el = n1 ? n1.el : document.createTextNode(''))
+  const fragmentEndAnchor = (n2.anchor = n1
+    ? n1.anchor
+    : document.createTextNode(''))
   if (n1 == null) {
-    const fragmentStartAnchor = (n2.el = document.createTextNode(''))
-    const fragmentEndAnchor = (n2.anchor = document.createTextNode(''))
-    // 作为空节点抢占位置
-    container.appendChild(fragmentStartAnchor)
-    mountChildren(n2.children, container)
-    container.appendChild(fragmentEndAnchor)
+    container.insertBefore(fragmentStartAnchor, anchor || null)
+    container.insertBefore(fragmentEndAnchor, anchor || null)
+    // 因为fragment的子元素的父级是祖父元素
+    mountChildren(n2.children, container, fragmentEndAnchor)
   } else {
-    patchChildren(n1, n2, container)
+    patchChildren(n1, n2, container, fragmentEndAnchor)
   }
 }
 
-function processText(n1, n2, container) {
+function processText(n1, n2, container, anchor) {
   if (n1 == null) {
-    mountTextNode(n2, container)
+    mountTextNode(n2, container, anchor)
   } else {
     n2.el = n1.el
     n2.el.textContent = n2.children
@@ -187,7 +194,7 @@ function processComponent(n1, n2, container) {
 }
 
 // todo
-function patchElement(n1, n2, container) {
+function patchElement(n1, n2) {
   n2.el = n1.el
   patchProps(n2.el, n1.props, n2.props)
   patchChildren(n1, n2, n2.el)
@@ -279,7 +286,14 @@ function pathDomProp(el, key, prev, next) {
       break
   }
 }
-function patchChildren(n1, n2, container) {
+/**
+ *
+ * @param {*} n1
+ * @param {*} n2
+ * @param {*} container
+ * @param {*} anchor 用于处理fragment case
+ */
+function patchChildren(n1, n2, container, anchor) {
   // 排除了n1是null的可能了,因为patchElement里面会进行一个判断
   const { shapeFlag: prevShapeFlag, children: c1 } = n1
   const { shapeFlag, children: c2 } = n2
@@ -297,7 +311,7 @@ function patchChildren(n1, n2, container) {
     // c1 is Array -> c2 is Array or null
     if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-        patchUnkeyedChildren(c1, c2, container)
+        patchUnkeyedChildren(c1, c2, container, anchor)
       } else {
         unmountChildren(c1)
       }
@@ -308,7 +322,7 @@ function patchChildren(n1, n2, container) {
         container.textContent = ''
       }
       if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-        mountChildren(c2, container)
+        mountChildren(c2, container, anchor)
       }
     }
   }
@@ -319,20 +333,19 @@ function unmountChildren(children) {
 }
 
 // patch children_array
-function patchUnkeyedChildren(c1, c2, container) {
+function patchUnkeyedChildren(c1, c2, container, anchor) {
   const oldLength = c1.length
   const newLength = c2.length
   //  将长度相同的前面的vnode进行diff patch
   const commonLength = Math.min(oldLength, newLength)
   console.log(container.innerHTML)
   for (let i = 0; i < commonLength; i++) {
-    // 如果不是相同类型,那么就会添加到后面,有bug
-    patch(c1[i], c2[i], container)
+    patch(c1[i], c2[i], container, anchor)
   }
   console.log(container.innerHTML)
   // 将新的元素挂载到后面去
   if (newLength > oldLength) {
-    mountChildren(c2.slice(commonLength), container)
+    mountChildren(c2.slice(commonLength), container, anchor)
   } else if (newLength < oldLength) {
     unmountChildren(c1.slice(commonLength))
   }

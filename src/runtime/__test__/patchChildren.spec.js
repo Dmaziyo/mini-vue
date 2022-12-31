@@ -5,7 +5,6 @@ let root
 beforeEach(() => {
   root = document.createElement('div')
 })
-
 const makeNodes = arr => {
   return {
     nodes: arr.map(tag => h(tag)),
@@ -13,7 +12,6 @@ const makeNodes = arr => {
   }
 }
 
-// 测试tag标签顺序,通过增长,缩短,调整位置,来验证是否合格
 describe('element anchor order check', () => {
   test('tag order', () => {
     let result
@@ -29,20 +27,21 @@ describe('element anchor order check', () => {
     render(h('div', null, result.nodes), root)
     expect(root.children[0].innerHTML).toBe(result.html)
   })
+
   test('tag and text order', () => {
     render(
       h('div', null, [h(Text, null, 'text1'), h('p'), h(Text, null, 'text2')]),
       root
     )
-    expect(root.children[0].innerHTML).toBe(`text1<p></p>text2`)
+    expect(root.children[0].innerHTML).toBe('text1<p></p>text2')
 
-    // 目前的代码有问题,所以顺序不会对
     render(
       h('div', null, [h('p'), h(Text, null, 'text2'), h(Text, null, 'text1')]),
       root
     )
     expect(root.children[0].innerHTML).toBe('<p></p>text2text1')
   })
+
   test('tag will be more or less', () => {
     let result
     result = makeNodes(['h1', 'h2', 'h3'])
@@ -51,7 +50,7 @@ describe('element anchor order check', () => {
 
     result = makeNodes(['h5', 'h1', 'h4', 'h2', 'h3'])
     render(h('div', null, result.nodes), root)
-    expect(root.children[0].innerHTML).toBe(root.html)
+    expect(root.children[0].innerHTML).toBe(result.html)
 
     result = makeNodes(['h2', 'h3'])
     render(h('div', null, result.nodes), root)
@@ -61,6 +60,7 @@ describe('element anchor order check', () => {
     render(h('div', null, result.nodes), root)
     expect(root.children[0].innerHTML).toBe(result.html)
   })
+
   test('tag and text will be more or less', () => {
     render(h('div', null, [h(Text, null, 'text1')]), root)
     expect(root.children[0].innerHTML).toBe('text1')
@@ -82,98 +82,114 @@ describe('element anchor order check', () => {
     )
     expect(root.children[0].innerHTML).toBe('<p></p>text2<div>text3</div>text1')
 
-    render(h('div', null, [h(Text, null, 'text2'), h(Text, null, 'text1')]))
+    render(h('div', null, [h(Text, null, 'text2'), h(Text, null, 'text1')]), root)
     expect(root.children[0].innerHTML).toBe('text2text1')
+
     render(h('div'), root)
     expect(root.children[0].innerHTML).toBe('')
   })
-  describe('fragment anchor order', () => {
-    test('fragment to element', () => {
-      render(h(Fragment, null, [h('div')]), root)
-      expect(root.innerHTML).toBe('<div></div>')
+})
 
-      render(h('p'), root)
-      expect(root.innerHTML).toBe('<p></p>')
-    })
+describe('fragment anchor order', () => {
+  test('fragment to element', () => {
+    render(h(Fragment, null, [h('div')]), root)
+    expect(root.innerHTML).toBe('<div></div>')
 
-    test('fragment order', () => {
-      let result
-      result = makeNodes(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
-      render(h(Fragment, null, result.nodes), root)
-      expect(root.innerHTML).toBe(result.html)
+    render(h('p'), root)
+    expect(root.innerHTML).toBe('<p></p>')
+  })
 
-      result = makeNodes(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']).reverse()
-      render(h(Fragment, null, result.nodes), root)
-      expect(root.innerHTML).toBe(result.html)
+  test('fragment order', () => {
+    let result
+    result = makeNodes(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+    render(h(Fragment, null, result.nodes), root)
+    expect(root.innerHTML).toBe(result.html)
 
-      result = makeNodes(['h2', 'h2', 'h5', 'h3', 'h6'])
-      render(h(Fragment, null, result.nodes), root)
-      expect(root.innerHTML).toBe(result.html)
-    })
+    result = makeNodes(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].reverse())
+    render(h(Fragment, null, result.nodes), root)
+    expect(root.innerHTML).toBe(result.html)
 
-    test('fragment will be more or less', () => {
-      let result
-      result = makeNodes(['h1', 'h2', 'h3'])
-      render(h(Fragment, null, result.nodes), root)
-      expect(root.innerHTML).toBe(result.html)
+    result = makeNodes(['h2', 'h2', 'h5', 'h5', 'h3', 'h6'])
+    render(h(Fragment, null, result.nodes), root)
+    expect(root.innerHTML).toBe(result.html)
+  })
 
-      result = makeNodes(['h5', 'h1', 'h4', 'h2', 'h3'])
-      render(h(Fragment, null, result.nodes), root)
-      expect(root.innerHTML).toBe(result.html)
+  test('fragment will be more or less', () => {
+    let result
+    result = makeNodes(['h1', 'h2', 'h3'])
+    render(h(Fragment, null, result.nodes), root)
+    expect(root.innerHTML).toBe(result.html)
 
-      result = makeNodes(['h2', 'h3'])
-      render(h(Fragment, null, result.nodes), root)
-      expect(root.innerHTML).toBe(result.html)
+    result = makeNodes(['h5', 'h1', 'h4', 'h2', 'h3'])
+    render(h(Fragment, null, result.nodes), root)
+    expect(root.innerHTML).toBe(result.html)
 
-      result = makeNodes([])
-      render(h(Fragment, null, result.nodes), root)
-      expect(root.innerHTML).toBe(result.html)
-    })
-    test('multi fragments and elements', () => {
-      let result1, result2, result3
-      result1 = makeNodes(['h1', 'h2', 'h3'])
-      result2 = makeNodes(['h4', 'h5', 'h6'])
-      result3 = makeNodes(['h7', 'h8', 'h9'])
-      render(
-        h(Fragment, null, [
-          h(Fragment, null, result3.nodes),
-          h(Fragment, null, result1.nodes),
-          h(Fragment, null, result2.nodes)
-        ])
-      )
-      expect(root.innerHTML).toBe(result3.html + result1.html + result2.html)
+    result = makeNodes(['h2', 'h3'])
+    render(h(Fragment, null, result.nodes), root)
+    expect(root.innerHTML).toBe(result.html)
 
-      result1 = makeNodes(['h1', 'h2', 'h3'])
-      result2 = makeNodes(['h4', 'h5', 'h6'])
-      result3 = makeNodes(['h7', 'h8', 'h9'])
-      render(
-        h(Fragment, null, [
-          h(Fragment, null, result2.nodes),
-          h('div', null, 'new tag1'),
-          h(Fragment, null, result3.nodes),
-          h(Fragment, null, result1.nodes),
-          h(Text, null, 'new tag2')
-        ]),
-        root
-      )
-      expect(root.innerHTML).toBe(
-        result2.html +
-          `<div>new tag1</div>` +
-          result3.html +
-          result1.html +
-          'new tag2'
-      )
-      result1 = makeNodes(['h1', 'h2', 'h3'])
-      render(h(Fragment, null, [h(Fragment, null, result1.nodes)]), root)
-      expect(root.innerHTML).toBe(result1.html)
-      render(null, root)
-      expect(root.innerHTML).toBe('')
-      expect(root.childNodes.length).toBe(0)
-    })
+    result = makeNodes([])
+    render(h(Fragment, null, result.nodes), root)
+    expect(root.innerHTML).toBe(result.html)
+  })
+
+  test('multi fragments and elements', () => {
+    let result1, result2, result3
+    result1 = makeNodes(['h1', 'h2', 'h3'])
+    result2 = makeNodes(['h4', 'h5', 'h6'])
+    result3 = makeNodes(['h7', 'h8', 'h9'])
+    render(
+      h(Fragment, null, [
+        h(Fragment, null, result1.nodes),
+        h(Fragment, null, result2.nodes),
+        h(Fragment, null, result3.nodes)
+      ]),
+      root
+    )
+    expect(root.innerHTML).toBe(result1.html + result2.html + result3.html)
+
+    result1 = makeNodes(['h1', 'h2', 'h3'])
+    result2 = makeNodes(['h4', 'h5', 'h6'])
+    result3 = makeNodes(['h7', 'h8', 'h9'])
+    render(
+      h(Fragment, null, [
+        h(Fragment, null, result3.nodes),
+        h(Fragment, null, result1.nodes),
+        h(Fragment, null, result2.nodes)
+      ]),
+      root
+    )
+    expect(root.innerHTML).toBe(result3.html + result1.html + result2.html)
+
+    result1 = makeNodes(['h1', 'h2', 'h3'])
+    result2 = makeNodes(['h4', 'h5', 'h6'])
+    result3 = makeNodes(['h7', 'h8', 'h9'])
+    render(
+      h(Fragment, null, [
+        h(Fragment, null, result2.nodes),
+        h('div', null, 'new tag1'),
+        h(Fragment, null, result3.nodes),
+        h(Fragment, null, result1.nodes),
+        h(Text, null, 'new tag2')
+      ]),
+      root
+    )
+    expect(root.innerHTML).toBe(
+      result2.html + '<div>new tag1</div>' + result3.html + result1.html + 'new tag2'
+    )
+
+    result1 = makeNodes(['h1', 'h2', 'h3'])
+    render(h(Fragment, null, [h(Fragment, null, result1.nodes)]), root)
+    expect(root.innerHTML).toBe(result1.html)
+
+    render(null, root)
+    expect(root.innerHTML).toBe('')
+    expect(root.childNodes.length).toBe(0)
   })
 })
+
 describe('patchChildren', () => {
-  test('text children -> text Children ->null', () => {
+  test('text children -> text children -> null', () => {
     render(h(Text, null, 'foo'), root)
     expect(root.innerHTML).toBe('foo')
 
@@ -184,9 +200,10 @@ describe('patchChildren', () => {
     expect(root.innerHTML).toBe('')
   })
 
-  test('text children => array children1', () => {
+  test('text children => array children 1', () => {
     render(h(Text, null, 'text'), root)
     expect(root.innerHTML).toBe('text')
+
     render(h(Fragment, null, [h('div'), h('div')]), root)
     expect(root.innerHTML).toBe('<div></div><div></div>')
   })
@@ -195,6 +212,11 @@ describe('patchChildren', () => {
     render(h('div', null, 'text'), root)
     expect(root.innerHTML).toBe('<div>text</div>')
 
+    render(h('div', null, [h('h1'), h('h2')]), root)
+    expect(root.innerHTML).toBe('<div><h1></h1><h2></h2></div>')
+  })
+
+  test('array children -> text children', () => {
     render(h('div', null, [h('h1'), h('h2')]), root)
     expect(root.innerHTML).toBe('<div><h1></h1><h2></h2></div>')
 
