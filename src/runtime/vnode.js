@@ -60,6 +60,7 @@ export function h(type, props = null, children = null) {
     children,
     shapeFlag,
     el: null,
-    anchor: null
+    anchor: null,
+    key: (props && props.key) || null
   }
 }

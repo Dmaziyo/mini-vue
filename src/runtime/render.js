@@ -311,7 +311,11 @@ function patchChildren(n1, n2, container, anchor) {
     // c1 is Array -> c2 is Array or null
     if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-        patchUnkeyedChildren(c1, c2, container, anchor)
+        if (c1[0].key && c2[0].key) {
+          patchKeyedChildren(c1, c2, container, anchor)
+        } else {
+          patchUnkeyedChildren(c1, c2, container, anchor)
+        }
       } else {
         unmountChildren(c1)
       }
@@ -348,5 +352,44 @@ function patchUnkeyedChildren(c1, c2, container, anchor) {
     mountChildren(c2.slice(commonLength), container, anchor)
   } else if (newLength < oldLength) {
     unmountChildren(c1.slice(commonLength))
+  }
+}
+
+// 用于处理同级子元素并且有重复node的情况
+function patchKeyedChildren(c1, c2, container, anchor) {
+  let maxNexIndexSoFar = 0
+  for (let i = 0; i < c2.length; i++) {
+    const next = c2[i]
+    let find = false
+    for (let j = 0; j < c1.length; j++) {
+      const prev = c1[j]
+      if (prev.key === next.key) {
+        find = true
+        patch(prev, next, container, anchor)
+        if (j < maxNexIndexSoFar) {
+          /*
+            而当prev的位置,是小于前面的lastMaxIndex,说明在old children中是位于前面的,
+            因此要插入在new Children的后面去
+          */
+          const curAnchor = c2[i - 1].el.nextSibling
+          container.insertBefore(next.el, curAnchor)
+        } else {
+          maxNexIndexSoFar = j
+        }
+        break
+      }
+    }
+    if (!find) {
+      // 不能是anchor,因为是按照c2的顺序来的,如果中间多了一个...
+      const curAnchor = i === 0 ? c1[0].el : c2[i - 1].el.nextSibling
+      patch(null, next, container, curAnchor)
+    }
+  }
+  // 寻找c1中有而c2没有的,即多余的,并且解绑
+  for (let i = 0; i < c1.length; i++) {
+    const prev = c1[i]
+    if (!c2.find(next => next.key === prev.key)) {
+      unmount(prev)
+    }
   }
 }
