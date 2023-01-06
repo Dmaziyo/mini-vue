@@ -311,7 +311,8 @@ function patchChildren(n1, n2, container, anchor) {
     // c1 is Array -> c2 is Array or null
     if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-        if (c1[0].key && c2[0].key) {
+        if (c1[0] && c2[0] && c1[0].key && c2[0].key) {
+          debugger
           patchKeyedChildren(c1, c2, container, anchor)
         } else {
           patchUnkeyedChildren(c1, c2, container, anchor)
