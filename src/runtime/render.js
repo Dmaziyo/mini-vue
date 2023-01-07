@@ -359,38 +359,31 @@ function patchUnkeyedChildren(c1, c2, container, anchor) {
 // 用于处理同级子元素并且有重复node的情况
 function patchKeyedChildren(c1, c2, container, anchor) {
   let maxNexIndexSoFar = 0
+  const map = new Map()
+  c1.forEach((prev, j) => {
+    map.set(prev.key, { prev, j })
+  })
   for (let i = 0; i < c2.length; i++) {
     const next = c2[i]
-    let find = false
-    for (let j = 0; j < c1.length; j++) {
-      const prev = c1[j]
-      if (prev.key === next.key) {
-        find = true
-        patch(prev, next, container, anchor)
-        if (j < maxNexIndexSoFar) {
-          /*
-            而当prev的位置,是小于前面的lastMaxIndex,说明在old children中是位于前面的,
-            因此要插入在new Children的后面去
-          */
-          const curAnchor = c2[i - 1].el.nextSibling
-          container.insertBefore(next.el, curAnchor)
-        } else {
-          maxNexIndexSoFar = j
-        }
-        break
+    const curAnchor = i === 0 ? c1[0].el : c2[i - 1].el.nextSibling
+    if (map.has(next.key)) {
+      const { prev, j } = map.get(next.key)
+      // patch暂时不修改位置
+      patch(prev, next, container, anchor)
+      if (j < maxNexIndexSoFar) {
+        container.insertBefore(next.el, curAnchor)
+      } else {
+        maxNexIndexSoFar = j
       }
-    }
-    if (!find) {
-      // 不能是anchor,因为是按照c2的顺序来的,如果中间多了一个...
-      const curAnchor = i === 0 ? c1[0].el : c2[i - 1].el.nextSibling
+      map.delete(next.key)
+    } else {
       patch(null, next, container, curAnchor)
     }
   }
   // 寻找c1中有而c2没有的,即多余的,并且解绑
-  for (let i = 0; i < c1.length; i++) {
-    const prev = c1[i]
+  map.forEach(({ prev }) => {
     if (!c2.find(next => next.key === prev.key)) {
       unmount(prev)
     }
-  }
+  })
 }
