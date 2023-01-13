@@ -272,32 +272,104 @@ function patchUnkeyedChildren(c1, c2, container, anchor) {
 
 // 用于处理同级子元素并且有重复node的情况
 function patchKeyedChildren(c1, c2, container, anchor) {
-  let maxNexIndexSoFar = 0
-  const map = new Map()
-  c1.forEach((prev, j) => {
-    map.set(prev.key, { prev, j })
-  })
-  for (let i = 0; i < c2.length; i++) {
-    const next = c2[i]
-    const curAnchor = i === 0 ? c1[0].el : c2[i - 1].el.nextSibling
-    if (map.has(next.key)) {
-      const { prev, j } = map.get(next.key)
-      // patch暂时不修改位置
-      patch(prev, next, container, anchor)
-      if (j < maxNexIndexSoFar) {
-        container.insertBefore(next.el, curAnchor)
-      } else {
-        maxNexIndexSoFar = j
-      }
-      map.delete(next.key)
-    } else {
-      patch(null, next, container, curAnchor)
+  let i = 0,
+    e1 = c1.length - 1,
+    e2 = c2.length - 1
+  // 1.从左至右依次对比
+  while (i <= e1 && i <= e2 && c1[i].key === c2[i].key) {
+    patch(c1[i], c2[i], container, anchor)
+    i++
+  }
+
+  // 2.从右至左依次比对
+  while (i <= e1 && i <= e2 && c1[e1].key === c2[e2].key) {
+    patch(c1[e1], c2[e2], container, anchor)
+    e1--
+    e2--
+  }
+
+  if (i > e1) {
+    /* 旧children已经对比完了
+     表示可能中间需要添加新的元素,或者不需要添加
+     此时的e2并不是表示长度,而是中间那段的尾部
+    */
+    for (let j = i; j <= e2; j++) {
+      const nextPos = e2 + 1
+      // 如果新增元素在后面,就是anchor,如果是在中间,anchor就是e2+1
+      const curAnchor = (c2[nextPos] && c2[nextPos].el) || anchor
+      patch(null, c2[j], container, curAnchor)
+    }
+  } else if (i > e2) {
+    // 经过从左至右,从右至左的对比,说明e1中间或者后面有多余的需要解绑
+    for (let j = i; j <= e1; j++) {
+      unmount(c1[j])
     }
   }
-  // 寻找c1中有而c2没有的,即多余的,并且解绑
-  map.forEach(({ prev }) => {
-    if (!c2.find(next => next.key === prev.key)) {
-      unmount(prev)
+  //new Children 和 old Children中间有一段顺序打乱或者完全不同
+  else {
+    // 采用react diff算法,但不进行真的添加和移动,只做标记和删除
+    const map = new Map()
+    for (let j = i; j <= e1; j++) {
+      const prev = c1[j]
+      map.set(prev.key, { prev, j })
     }
-  })
+    let maxIndex = 0
+    let move = false
+    let toMounted = []
+    const source = new Array(e2 - i + 1).fill(-1)
+    for (let k = 0; k < e2 - i + 1; k++) {
+      const next = c2[k + i]
+      if (map.has(next)) {
+        const { prev, j } = map.get(next.key)
+        patch(prev, next, container, anchor)
+        if (j < maxIndex) {
+          move = true
+        } else {
+          maxIndex = j
+        }
+        source[k] = j
+        map.delete(next.key)
+      } else {
+        // 在之后顺序已经摆好了,直接往里面插入即可
+        toMounted.push(k + i)
+      }
+    }
+    map.forEach(({ prev }) => {
+      unmount(prev)
+    })
+
+    if (move) {
+      // 获取最长上升子序列
+      const seq = getSequence(source)
+      let j = seq.length - 1
+      for (let k = source.length - 1; k >= 0; k--) {
+        if (k === seq[j] && source[k] !== -1) {
+          j--
+        } else {
+          // 因为后面的元素都是排序排好的,所以pos+1就是Anchor位置
+          const pos = k + i
+          const nextPos = pos + 1
+          const curAnchor = (c2[nextPos] && c2[nextPos].el) || anchor
+          if (source[k] === -1) {
+            patch(null, c2[pos], container, curAnchor)
+          } else {
+            container.insertBefore(c2[pos].el, curAnchor)
+          }
+        }
+      }
+    }
+    if (toMounted.length) {
+      // 之前old children没有,需要添加进去的
+      // 在之后顺序已经摆好了,直接往里面插入相应index即可
+      for (let k = toMounted.length - 1; k >= 0; k--) {
+        const pos = toMounted[k]
+        const nextPos = pos + 1
+        const curAnchor = (c2[nextPos] && c2[nextPos].el) || anchor
+        patch(null, c2[pos], container, curAnchor)
+      }
+    }
+  }
+}
+function getSequence(nums) {
+  // todo
 }
