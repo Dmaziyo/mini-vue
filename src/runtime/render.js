@@ -323,6 +323,7 @@ function patchKeyedChildren(c1, c2, container, anchor) {
         const { prev, j } = map.get(next.key)
         patch(prev, next, container, anchor)
         if (j < maxIndex) {
+          // 如果发现数组索引不是升序的,那么就标记需要移动位置
           move = true
         } else {
           maxIndex = j
@@ -334,6 +335,7 @@ function patchKeyedChildren(c1, c2, container, anchor) {
         toMounted.push(k + i)
       }
     }
+    // 将没采用过的child 解绑
     map.forEach(({ prev }) => {
       unmount(prev)
     })
@@ -371,5 +373,34 @@ function patchKeyedChildren(c1, c2, container, anchor) {
   }
 }
 function getSequence(nums) {
-  // todo
+  let result = [nums[0]]
+  let pos = []
+  for (let i = 0; i < nums.length; i++) {
+    if (nums[i] > result[result.length - 1]) {
+      pos[i] = result.length
+      result.push(nums[i])
+      continue
+    }
+    let l = 0,
+      r = result.length - 1,
+      mid = Math.floor((l + r) / 2)
+    while (l < r) {
+      mid = Math.floor((l + r) / 2)
+      if (result[mid] >= nums[i]) {
+        r = mid
+      } else {
+        l = mid + 1
+      }
+    }
+    result[l] = nums[i]
+    pos[i] = l
+  }
+  let cur = result.length - 1
+  for (let i = nums.length - 1; i >= 0; i--) {
+    if (cur === -1) break
+    if (pos[i] === cur) {
+      result[cur--] = i
+    }
+  }
+  return result
 }
