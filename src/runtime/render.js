@@ -1,5 +1,6 @@
 import { patchProps } from './patchProps'
 import { h, Text, Fragment, ShapeFlags } from './vnode'
+import { reactive } from '../reactivity/reactive'
 /**
  *
  * @param {*} vnode
@@ -101,26 +102,62 @@ function mountChildren(children, container, anchor) {
 }
 
 // TODO
-function mountComponent(vnode, container) {
+function mountComponent(vnode, container, anchor) {
   if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-    mountStatefulComponent(vnode, container)
+    mountStatefulComponent(vnode, container, anchor)
   } else {
   }
 }
 
-function mountStatefulComponent(vnode, container) {
-  const { type: comp, props } = vnode
-  // 判断组件是否有父组件传来的props
-  const ctx = {}
-  if (props && comp.props) {
-    comp.props.forEach(key => {
-      if (key in props) {
-        ctx[key] = props[key]
-      }
-    })
+function mountStatefulComponent(vnode, container, anchor) {
+  /* originalComp: props 组件暴露的属性,
+                   render 用于生成组件的函数,
+                   setup() {
+                      const count = ref(0);
+                      const add = () => count.value++;
+                      return {
+                        count,
+                        add,
+                      };
+                    },
+  */
+  const { type: originalComp, props: vnodeProps } = vnode
+
+  // component实例
+  const instance = {
+    props: {},
+    attrs: {},
+    setupState: null,
+    ctx: null
   }
-  const subtree = comp.render(ctx)
-  patch(null, subtree, container)
+  // 将暴露的props和dom的props进行分离
+  for (const key in vnodeProps) {
+    if (originalComp.props && originalComp.props.includes(key)) {
+      instance.props[key] = vnodeProps[key]
+    } else {
+      instance.attrs[key] = vnodeProps[key]
+    }
+  }
+
+  // props也是需要响应式的
+  instance.props = reactive(instance.props)
+  instance.setupState = originalComp.setup?.(instance.props, {
+    attrs: instance.attrs
+  })
+  instance.ctx = reactive({
+    ...instance.props,
+    ...instance.setupState
+  })
+  const subtree = (instance.subtree = originalComp.render(instance.ctx))
+
+  // 将组件render函数返回的vnode中的props与Component组件中传入的props但没有暴露的结合在一起
+  subtree.props = {
+    ...subtree.props,
+    ...instance.attrs
+  }
+
+  patch(null, subtree, container, anchor)
+  vnode.component = instance
 }
 
 function unmount(vnode) {
@@ -186,9 +223,9 @@ function processText(n1, n2, container, anchor) {
   }
 }
 
-function processComponent(n1, n2, container) {
+function processComponent(n1, n2, container, anchor) {
   if (n1 == null) {
-    mountComponent(n2, container)
+    mountComponent(n2, container, anchor)
   } else {
   }
 }
