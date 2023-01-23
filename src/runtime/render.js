@@ -1,5 +1,5 @@
 import { patchProps } from './patchProps'
-import { h, Text, Fragment, ShapeFlags } from './vnode'
+import { h, Text, Fragment, ShapeFlags, normalizeVNode } from './vnode'
 import { reactive } from '../reactivity/reactive'
 /**
  *
@@ -148,7 +148,9 @@ function mountStatefulComponent(vnode, container, anchor) {
     ...instance.props,
     ...instance.setupState
   })
-  const subtree = (instance.subtree = originalComp.render(instance.ctx))
+  const subtree = (instance.subtree = normalizeVNode(
+    originalComp.render(instance.ctx)
+  ))
 
   // 将组件render函数返回的vnode中的props与Component组件中传入的props但没有暴露的结合在一起
   subtree.props = {

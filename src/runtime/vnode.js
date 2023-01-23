@@ -64,3 +64,18 @@ export function h(type, props = null, children = null) {
     key: (props && props.key) || null
   }
 }
+
+/* 处理情况
+    case1: result是VNode结点
+    case2: result是Vnode数组,即Fragment
+    case3: result是纯文本
+*/
+export function normalizeVNode(result) {
+  if (isObject(result)) {
+    return result
+  }
+  if (Array.isArray(result)) {
+    return h(Fragment, null, result)
+  }
+  return h(Text, null, result)
+}
