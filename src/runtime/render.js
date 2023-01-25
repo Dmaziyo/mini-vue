@@ -148,17 +148,17 @@ function mountStatefulComponent(vnode, container, anchor) {
     ...instance.props,
     ...instance.setupState
   })
-  const subtree = (instance.subtree = normalizeVNode(
+  const subTree = (instance.subTree = normalizeVNode(
     originalComp.render(instance.ctx)
   ))
 
   // 将组件render函数返回的vnode中的props与Component组件中传入的props但没有暴露的结合在一起
-  subtree.props = {
-    ...subtree.props,
+  subTree.props = {
+    ...subTree.props,
     ...instance.attrs
   }
 
-  patch(null, subtree, container, anchor)
+  patch(null, subTree, container, anchor)
   vnode.component = instance
 }
 
@@ -174,7 +174,10 @@ function unmount(vnode) {
 }
 
 // todo
-function unmountComponent(vnode) {}
+function unmountComponent(vnode) {
+  const { component } = vnode
+  unmount(component.subTree)
+}
 
 function unmountFragment(vnode) {
   // 从startAnchor开始清除,直至清除Anchor包围的DOM数组
