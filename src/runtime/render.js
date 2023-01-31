@@ -103,13 +103,6 @@ function mountChildren(children, container, anchor) {
 
 // TODO
 function mountComponent(vnode, container, anchor) {
-  if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-    mountStatefulComponent(vnode, container, anchor)
-  } else {
-  }
-}
-
-function mountStatefulComponent(vnode, container, anchor) {
   /* originalComp: props 组件暴露的属性,
                    render 用于生成组件的函数,
                    setup() {
