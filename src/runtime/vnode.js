@@ -1,3 +1,4 @@
+import { isReactive } from '../reactivity'
 import { isFunction, isObject } from '../utils'
 
 export const Text = Symbol('Text')
@@ -51,6 +52,15 @@ export function h(type, props = null, children = null) {
   // array children 必须只能是Vnode array
   else if (Array.isArray(children)) {
     shapeFlag |= ShapeFlags.ARRAY_CHILDREN
+  }
+  if (props) {
+    // 因为这里没有调用props,所以需要在这里把reactive的props都调用一遍,用于自动更新
+    if (isReactive(props)) {
+      props = Object.assign({}, props)
+    }
+    if (isReactive(props.style)) {
+      props.style = Object.assign({}, props.style)
+    }
   }
   return {
     type,

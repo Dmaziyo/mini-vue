@@ -7,6 +7,7 @@ import { reactive, effect } from '../reactivity'
  * @param {*} container  根元素DOM
  */
 export function render(vnode, container) {
+  debugger
   // 现在的render就是与container之前的打补丁
   const prevVNode = container._vnode
   // 如果元素不存在,那么就意味解绑
@@ -151,20 +152,25 @@ function mountComponent(vnode, container, anchor) {
         originalComp.render(instance.ctx)
       ))
       // 将组件render函数返回的vnode中的props与Component组件中传入的props但没有暴露的结合在一起
-      subTree.props = {
-        ...subTree.props,
-        ...instance.attrs
+      if (Object.keys(instance.attrs)) {
+        subTree.props = {
+          ...subTree.props,
+          ...instance.attrs
+        }
       }
       patch(null, subTree, container, anchor)
       instance.isMounted = true
+      vnode.el = subTree.el
     } else {
       const prev = instance.subTree
       const subTree = (instance.subTree = normalizeVNode(
         originalComp.render(instance.ctx)
       ))
-      subTree.props = {
-        ...subTree.props,
-        ...instance.attrs
+      if (Object.keys(instance.attrs)) {
+        subTree.props = {
+          ...subTree.props,
+          ...instance.attrs
+        }
       }
       patch(prev, subTree, container, anchor)
     }
