@@ -44,8 +44,9 @@ export function h(type, props = null, children = null) {
   }
 
   // 这样可以用一个shapeFlag进行多种判断
-  if (typeof children === 'string') {
+  if (typeof children === 'string' || typeof children === 'number') {
     shapeFlag |= ShapeFlags.TEXT_CHILDREN
+    children = children.toString()
   }
   // array children 必须只能是Vnode array
   else if (Array.isArray(children)) {
@@ -64,16 +65,16 @@ export function h(type, props = null, children = null) {
 }
 
 /* 处理情况
-    case1: result是VNode结点
-    case2: result是Vnode数组,即Fragment
+    case1: result是Vnode数组,即Fragment
+    case2: result是VNode结点
     case3: result是纯文本
 */
 export function normalizeVNode(result) {
-  if (isObject(result)) {
-    return result
-  }
   if (Array.isArray(result)) {
     return h(Fragment, null, result)
   }
-  return h(Text, null, result)
+  if (isObject(result)) {
+    return result
+  }
+  return h(Text, null, result.toString())
 }

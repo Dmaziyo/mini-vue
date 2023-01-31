@@ -181,3 +181,30 @@ describe('unmount component', () => {
     expect(root.innerHTML).toBe('')
   })
 })
+
+describe('update component trigger by self', () => {
+  it('setup result with event and update', () => {
+    const Comp = {
+      setup() {
+        const counter = ref(0)
+        const click = () => {
+          counter.value++
+        }
+        return {
+          counter,
+          click
+        }
+      },
+      render(ctx) {
+        return h('div', { onClick: ctx.click }, ctx.counter.value)
+      }
+    }
+    render(h(Comp), root)
+    expect(root.innerHTML).toBe('<div>0</div>')
+    root.children[0].click()
+    expect(root.innerHTML).toBe('<div>1</div>')
+    root.children[0].click()
+    root.children[0].click()
+    expect(root.innerHTML).toBe('<div>3</div>')
+  })
+})

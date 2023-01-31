@@ -1,6 +1,6 @@
 import { patchProps } from './patchProps'
 import { h, Text, Fragment, ShapeFlags, normalizeVNode } from './vnode'
-import { reactive } from '../reactivity/reactive'
+import { reactive, effect } from '../reactivity'
 /**
  *
  * @param {*} vnode
@@ -121,7 +121,9 @@ function mountComponent(vnode, container, anchor) {
     props: {},
     attrs: {},
     setupState: null,
-    ctx: null
+    ctx: null,
+    update: null,
+    isMounted: false
   }
   // 将暴露的props和dom的props进行分离
   for (const key in vnodeProps) {
@@ -141,18 +143,38 @@ function mountComponent(vnode, container, anchor) {
     ...instance.props,
     ...instance.setupState
   })
-  const subTree = (instance.subTree = normalizeVNode(
-    originalComp.render(instance.ctx)
-  ))
 
-  // 将组件render函数返回的vnode中的props与Component组件中传入的props但没有暴露的结合在一起
-  subTree.props = {
-    ...subTree.props,
-    ...instance.attrs
-  }
-
-  patch(null, subTree, container, anchor)
+  // 用于主动更新,即ctx里面的值发生变化,主动更新一次
+  instance.update = effect(() => {
+    if (!instance.isMounted) {
+      const subTree = (instance.subTree = normalizeVNode(
+        originalComp.render(instance.ctx)
+      ))
+      // 将组件render函数返回的vnode中的props与Component组件中传入的props但没有暴露的结合在一起
+      subTree.props = {
+        ...subTree.props,
+        ...instance.attrs
+      }
+      patch(null, subTree, container, anchor)
+      instance.isMounted = true
+    } else {
+      const prev = instance.subTree
+      const subTree = (instance.subTree = normalizeVNode(
+        originalComp.render(instance.ctx)
+      ))
+      subTree.props = {
+        ...subTree.props,
+        ...instance.attrs
+      }
+      patch(prev, subTree, container, anchor)
+    }
+  })
   vnode.component = instance
+}
+
+function updateComponent(n1, n2) {
+  n2.component = n1.component
+  n2.component.update()
 }
 
 function unmount(vnode) {
@@ -225,6 +247,7 @@ function processComponent(n1, n2, container, anchor) {
   if (n1 == null) {
     mountComponent(n2, container, anchor)
   } else {
+    updateComponent(n1, n2)
   }
 }
 
