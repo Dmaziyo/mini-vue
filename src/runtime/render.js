@@ -7,7 +7,6 @@ import { reactive, effect } from '../reactivity'
  * @param {*} container  根元素DOM
  */
 export function render(vnode, container) {
-  debugger
   // 现在的render就是与container之前的打补丁
   const prevVNode = container._vnode
   // 如果元素不存在,那么就意味解绑
@@ -140,6 +139,12 @@ function mountComponent(vnode, container, anchor) {
   instance.setupState = originalComp.setup?.(instance.props, {
     attrs: instance.attrs
   })
+  debugger
+  // 1.ctx.fullName.value 			--reactive
+  // 2.value  						-- computed
+  // 3.this._value = this.effect()   -- 触发进入了 reactive的set
+  // 4.而上面的_value 又触发了一次effect(即update),而两次都是patch(null,subTree),所以会导致重复出现2次div相同的结点
+
   instance.ctx = reactive({
     ...instance.props,
     ...instance.setupState
