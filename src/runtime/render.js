@@ -139,16 +139,11 @@ function mountComponent(vnode, container, anchor) {
   instance.setupState = originalComp.setup?.(instance.props, {
     attrs: instance.attrs
   })
-  debugger
-  // 1.ctx.fullName.value 			--reactive
-  // 2.value  						-- computed
-  // 3.this._value = this.effect()   -- 触发进入了 reactive的set
-  // 4.而上面的_value 又触发了一次effect(即update),而两次都是patch(null,subTree),所以会导致重复出现2次div相同的结点
 
-  instance.ctx = reactive({
+  instance.ctx = {
     ...instance.props,
     ...instance.setupState
-  })
+  }
 
   // 用于主动更新,即ctx里面的值发生变化,主动更新一次
   instance.update = effect(() => {
