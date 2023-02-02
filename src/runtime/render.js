@@ -32,7 +32,8 @@ export function render(vnode, container) {
 function patch(n1, n2, container, anchor) {
   // 如果存在prevNode且不是相同类型,那么anchor也可以找到,如果没有anchor,那么就是唯一的子元素
   if (n1 && !isSameVNodeType(n1, n2)) {
-    // 如果不是sameType,就进行patch操作即可
+    // 如果不是sameType,就进行直接解绑,重新绑定新的
+    // 而Component的type是render函数
     anchor = (n1.anchor || n1.el).nextSibling
     unmount(n1)
     n1 = null
@@ -179,6 +180,7 @@ function mountComponent(vnode, container, anchor) {
 }
 
 function updateComponent(n1, n2) {
+  // 如果重新渲染相同的组件,但暴露不同的props,此时还是会是n1的component的props
   n2.component = n1.component
   n2.component.update()
 }
@@ -321,7 +323,6 @@ function patchUnkeyedChildren(c1, c2, container, anchor) {
   const newLength = c2.length
   //  将长度相同的前面的vnode进行diff patch
   const commonLength = Math.min(oldLength, newLength)
-  console.log(container.innerHTML)
   for (let i = 0; i < commonLength; i++) {
     patch(c1[i], c2[i], container, anchor)
   }
