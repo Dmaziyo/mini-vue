@@ -68,9 +68,10 @@ export function h(type, props = null, children = null) {
     children,
     shapeFlag,
     el: null,
-    anchor: null,
+    anchor: null, //专用于Fragment
     key: (props && props.key) || null,
-    component: null
+    component: null, //组件实例
+    next: null //组件更新时,把新vnode暂放这里
   }
 }
 

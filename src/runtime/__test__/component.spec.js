@@ -417,62 +417,63 @@ describe('update component trigger by others', () => {
 
     expect(root.innerHTML).toBe('<h1><p>text</p></h1>')
   })
-  // test('parent props update make child update', () => {
-  //   const text = 'text'
-  //   const id = ref('id')
+  test('parent props update make child update', () => {
+    const text = ref('text')
+    const id = ref('id')
 
-  //   const Child = {
-  //     props: ['text'],
-  //     render(ctx) {
-  //       return h('div', null, ctx.text)
-  //     }
-  //   }
+    const Child = {
+      props: ['text'],
+      render(ctx) {
+        return h('div', null, ctx.text)
+      }
+    }
 
-  //   const Parent = {
-  //     render() {
-  //       return h(Child, { text: text, id: id.value })
-  //     }
-  //   }
+    const Parent = {
+      render() {
+        return h(Child, { text: text.value, id: id.value })
+      }
+    }
 
-  //   render(h(Parent), root)
-  //   expect(root.innerHTML).toBe('<div id="id">text</div>')
+    render(h(Parent), root)
+    expect(root.innerHTML).toBe('<div id="id">text</div>')
 
-  //   // debugger
-  //   text.value = 'foo'
-  //   expect(root.innerHTML).toBe('<div id="id">foo</div>')
-  // })
+    // debugger
+    text.value = 'foo'
+    expect(root.innerHTML).toBe('<div id="id">foo</div>')
+  })
 
-  // test('child will not update when props have not change', () => {
-  //   const text = ref('text')
-  //   const id = ref('id')
-  //   const anotherText = ref('a')
-  //   const Parent = {
-  //     render() {
-  //       return [
-  //         h(Text, null, anotherText.value),
-  //         h(Child, { text: text.value, id: id.value })
-  //       ]
-  //     }
-  //   }
+  test('child will not update when props have not change', () => {
+    const text = ref('text')
+    const id = ref('id')
+    const anotherText = ref('a')
+    const Parent = {
+      render() {
+        return [
+          h(Text, null, anotherText.value),
+          h(Child, { text: text.value, id: id.value })
+        ]
+      }
+    }
 
-  //   let renderCount = 0
-  //   const Child = {
-  //     props: ['text'],
-  //     render(ctx) {
-  //       renderCount++
-  //       return h('div', null, ctx.text)
-  //     }
-  //   }
+    let renderCount = 0
+    const Child = {
+      props: ['text'],
+      render(ctx) {
+        renderCount++
+        return h('div', null, ctx.text)
+      }
+    }
 
-  //   render(h(Parent), root)
-  //   expect(root.innerHTML).toBe('a<div id="id">text</div>')
-  //   expect(renderCount).toBe(1)
+    render(h(Parent), root)
+    expect(root.innerHTML).toBe('a<div id="id">text</div>')
+    expect(renderCount).toBe(1)
 
-  //   anotherText.value = 'b'
-  //   expect(root.innerHTML).toBe('b<div id="id">text</div>')
-  //   // 要实现被动更新只有当与其相关的值发生变动再render
-  //   expect(renderCount).toBe(1)
-  // })
+    anotherText.value = 'b'
+    expect(root.innerHTML).toBe('b<div id="id">text</div>')
+    // TODO:
+    // 要实现被动更新只有当与其相关的值发生变动再render
+    // expect(renderCount).toBe(1)
+  })
 
   test('switch child', () => {
     const Parent = {

@@ -4,26 +4,28 @@ import { h, Text, Fragment } from './runtime/vnode'
 import { render } from './runtime/render'
 
 const root = document.createElement('div')
-const firstName = ref('james')
-const lastName = ref('bond')
-const Comp = {
-  setup() {
-    const fullName = computed(() => {
-      return `${firstName.value} ${lastName.value}`
-    })
+const value = ref(true)
+let parentVnode
+let childVnode1
+let childVnode2
 
-    return { fullName }
-  },
-  render(ctx) {
-    return h('div', null, ctx.fullName.value)
+const Parent = {
+  render: () => {
+    return (parentVnode = h(Child))
   }
 }
-render(h(Comp), root)
+
+const Child = {
+  render: () => {
+    return value.value ? (childVnode1 = h('div')) : (childVnode2 = h('span'))
+  }
+}
+
+render(h(Parent), root)
+// expect(root.innerHTML).toBe('<div></div>')
+// expect(parentVnode.el).toBe(childVnode1.el)
 debugger
-// expect(root.innerHTML).toBe('<div>james bond</div>')
-
-firstName.value = 'a'
-// expect(root.innerHTML).toBe('<div>a bond</div>')
-
-lastName.value = 'b'
-// expect(root.innerHTML).toBe('<div>a b</div>')
+value.value = false
+console.log(value.value)
+// expect(root.innerHTML).toBe(`<span></span>`)
+// expect(parentVnode.el).toBe(childVnode2.el)
