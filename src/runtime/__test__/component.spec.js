@@ -509,4 +509,30 @@ describe('update component trigger by others', () => {
     root.children[1].click()
     expect(root.innerHTML).toBe('<p></p><button>click</button>')
   })
+  test('should update parent component host el when child self update', async () => {
+    const value = ref(true)
+    let parentVnode
+    let childVnode1
+    let childVnode2
+
+    const Parent = {
+      render: () => {
+        return (parentVnode = h(Child))
+      }
+    }
+
+    const Child = {
+      render: () => {
+        return value.value ? (childVnode1 = h('div')) : (childVnode2 = h('span'))
+      }
+    }
+
+    render(h(Parent), root)
+    expect(root.innerHTML).toBe('<div></div>')
+    expect(parentVnode.el).toBe(childVnode1.el)
+
+    value.value = false
+    expect(root.innerHTML).toBe(`<span></span>`)
+    expect(parentVnode.el).toBe(childVnode2.el)
+  })
 })
