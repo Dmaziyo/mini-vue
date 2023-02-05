@@ -1,4 +1,5 @@
 import { reactive, effect } from '../reactivity'
+import { queueJob } from './scheduler'
 import { normalizeVNode } from './vnode'
 
 function updateComponentProps(instance, vnode) {
@@ -52,51 +53,54 @@ export function mountComponent(vnode, container, anchor, patch) {
   }
 
   // 用于主动更新,即ctx里面的值发生变化,主动更新一次
-  instance.update = effect(() => {
-    if (!instance.isMounted) {
-      const subTree = (instance.subTree = normalizeVNode(
-        originalComp.render(instance.ctx)
-      ))
-      // 将组件render函数返回的vnode中的props与Component组件中传入的props但没有暴露的结合在一起
-      if (Object.keys(instance.attrs)) {
-        subTree.props = {
-          ...subTree.props,
-          ...instance.attrs
+  instance.update = effect(
+    () => {
+      if (!instance.isMounted) {
+        const subTree = (instance.subTree = normalizeVNode(
+          originalComp.render(instance.ctx)
+        ))
+        // 将组件render函数返回的vnode中的props与Component组件中传入的props但没有暴露的结合在一起
+        if (Object.keys(instance.attrs)) {
+          subTree.props = {
+            ...subTree.props,
+            ...instance.attrs
+          }
         }
-      }
-      patch(null, subTree, container, anchor)
-      instance.isMounted = true
-      vnode.el = subTree.el
-    } else {
-      // 如果next存在,
-      // 说明是被动更新:parent Vnode发生变化,则说明父组件传来的props可能有变化
-      // 反之为主动更新:自身props 发生变化
-      if (instance.next) {
-        vnode = instance.next
-        instance.next = null
-        instance.props = reactive(instance.props)
+        patch(null, subTree, container, anchor)
+        instance.isMounted = true
+        vnode.el = subTree.el
+      } else {
+        // 如果next存在,
+        // 说明是被动更新:parent Vnode发生变化,则说明父组件传来的props可能有变化
+        // 反之为主动更新:自身props 发生变化
+        if (instance.next) {
+          vnode = instance.next
+          instance.next = null
+          instance.props = reactive(instance.props)
 
-        // 先更新从父组件传来的props
-        updateComponentProps(instance, vnode)
-        instance.ctx = {
-          ...instance.props,
-          ...instance.setupState
+          // 先更新从父组件传来的props
+          updateComponentProps(instance, vnode)
+          instance.ctx = {
+            ...instance.props,
+            ...instance.setupState
+          }
         }
-      }
 
-      const prev = instance.subTree
-      const subTree = (instance.subTree = normalizeVNode(
-        originalComp.render(instance.ctx)
-      ))
-      if (Object.keys(instance.attrs)) {
-        subTree.props = {
-          ...subTree.props,
-          ...instance.attrs
+        const prev = instance.subTree
+        const subTree = (instance.subTree = normalizeVNode(
+          originalComp.render(instance.ctx)
+        ))
+        if (Object.keys(instance.attrs)) {
+          subTree.props = {
+            ...subTree.props,
+            ...instance.attrs
+          }
         }
+        patch(prev, subTree, container, anchor)
+        vnode.el = subTree.el
       }
-      patch(prev, subTree, container, anchor)
-      vnode.el = subTree.el
-    }
-  })
+    },
+    { scheduler: queueJob }
+  )
   vnode.component = instance
 }
