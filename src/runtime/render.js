@@ -1,6 +1,6 @@
 import { patchProps } from './patchProps'
-import { h, Text, Fragment, ShapeFlags, normalizeVNode } from './vnode'
-import { reactive, effect } from '../reactivity'
+import { ShapeFlags } from './vnode'
+import { mountComponent } from './component'
 /**
  *
  * @param {*} vnode
@@ -102,106 +102,6 @@ function mountChildren(children, container, anchor) {
   })
 }
 
-function updateComponentProps(instance, vnode) {
-  const { type: originalComp, props: vnodeProps } = vnode
-
-  // 将暴露的props和dom的props进行分离
-  for (const key in vnodeProps) {
-    if (originalComp.props && originalComp.props.includes(key)) {
-      instance.props[key] = vnodeProps[key]
-    } else {
-      instance.attrs[key] = vnodeProps[key]
-    }
-  }
-  instance.props = reactive(instance.props)
-}
-
-function mountComponent(vnode, container, anchor) {
-  /* originalComp: props 组件暴露的属性,
-                   render 用于生成组件的函数,
-                   setup() {
-                      const count = ref(0);
-                      const add = () => count.value++;
-                      return {
-                        count,
-                        add,
-                      };
-                    },
-  */
-  const { type: originalComp } = vnode
-
-  // component实例
-  const instance = {
-    props: {},
-    attrs: {},
-    setupState: null,
-    ctx: null,
-    update: null,
-    isMounted: false
-  }
-
-  updateComponentProps(instance, vnode)
-
-  // props也是需要响应式的
-  instance.setupState = originalComp.setup?.(instance.props, {
-    attrs: instance.attrs
-  })
-
-  instance.ctx = {
-    ...instance.props,
-    ...instance.setupState
-  }
-
-  // 用于主动更新,即ctx里面的值发生变化,主动更新一次
-  instance.update = effect(() => {
-    if (!instance.isMounted) {
-      const subTree = (instance.subTree = normalizeVNode(
-        originalComp.render(instance.ctx)
-      ))
-      // 将组件render函数返回的vnode中的props与Component组件中传入的props但没有暴露的结合在一起
-      if (Object.keys(instance.attrs)) {
-        subTree.props = {
-          ...subTree.props,
-          ...instance.attrs
-        }
-      }
-      patch(null, subTree, container, anchor)
-      instance.isMounted = true
-      vnode.el = subTree.el
-    } else {
-      // 如果next存在,
-      // 说明是被动更新:parent Vnode发生变化,则说明父组件传来的props可能有变化
-      // 反之为主动更新:自身props 发生变化
-      if (instance.next) {
-        vnode = instance.next
-        instance.next = null
-        instance.props = reactive(instance.props)
-
-        // 先更新从父组件传来的props
-        updateComponentProps(instance, vnode)
-        instance.ctx = {
-          ...instance.props,
-          ...instance.setupState
-        }
-      }
-
-      const prev = instance.subTree
-      const subTree = (instance.subTree = normalizeVNode(
-        originalComp.render(instance.ctx)
-      ))
-      if (Object.keys(instance.attrs)) {
-        subTree.props = {
-          ...subTree.props,
-          ...instance.attrs
-        }
-      }
-      patch(prev, subTree, container, anchor)
-      vnode.el = subTree.el
-    }
-  })
-  vnode.component = instance
-}
-
 function updateComponent(n1, n2) {
   // 如果重新渲染相同的组件,但暴露不同的props,此时还是会是n1的component的props
   n2.component = n1.component
@@ -277,7 +177,7 @@ function processText(n1, n2, container, anchor) {
 
 function processComponent(n1, n2, container, anchor) {
   if (n1 == null) {
-    mountComponent(n2, container, anchor)
+    mountComponent(n2, container, anchor, patch)
   } else {
     updateComponent(n1, n2)
   }
