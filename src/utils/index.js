@@ -15,3 +15,8 @@ export function hasChanged(value, oldValue) {
   //确保没有都是NaN
   return value !== oldValue && (value === value || oldValue === oldValue)
 }
+
+export function camelize(str) {
+  // 后面的是replacer
+  return str.replace(/-(\w)/g, (_, c) => (c ? c.toUpperCase() : ''))
+}
