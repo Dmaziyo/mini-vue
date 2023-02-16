@@ -1,27 +1,18 @@
+import { compile } from './compiler/compile'
+import { createApp, render, h, Text, Fragment, nextTick } from './runtime'
 import { reactive, ref, computed, effect } from './reactivity'
-import { h, Text, Fragment } from './runtime/vnode'
-import { createApp } from './runtime/createApp'
 
-const root = document.createElement('div')
+export const MiniVue = (window.MiniVue = {
+  createApp,
+  render,
+  h,
+  Text,
+  Fragment,
 
-const Comp = {
-  setup() {
-    const counter = ref(0)
-    const add = () => {
-      counter.value++
-    }
-    return {
-      counter,
-      add
-    }
-  },
-  render(ctx) {
-    return [
-      h('div', null, ctx.counter.value),
-      h('button', { onClick: ctx.add }, 'add')
-    ]
-  }
-}
-
-createApp(Comp).mount(root)
-document.body.appendChild(root)
+  nextTick,
+  reactive,
+  ref,
+  computed,
+  effect,
+  compile
+})
