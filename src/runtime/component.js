@@ -87,6 +87,7 @@ export function mountComponent(vnode, container, anchor, patch) {
         }
 
         const prev = instance.subTree
+        // 即使返回的是数组,我们可以自己进行normalize
         const subTree = (instance.subTree = normalizeVNode(
           originalComp.render(instance.ctx)
         ))

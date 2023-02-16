@@ -1,31 +1,27 @@
-import { reactive, ref, computed } from './reactivity'
-import { effect } from './reactivity/effect'
+import { reactive, ref, computed, effect } from './reactivity'
 import { h, Text, Fragment } from './runtime/vnode'
-import { render } from './runtime/render'
+import { createApp } from './runtime/createApp'
 
 const root = document.createElement('div')
-const value = ref(true)
-let parentVnode
-let childVnode1
-let childVnode2
 
-const Parent = {
-  render: () => {
-    return (parentVnode = h(Child))
+const Comp = {
+  setup() {
+    const counter = ref(0)
+    const add = () => {
+      counter.value++
+    }
+    return {
+      counter,
+      add
+    }
+  },
+  render(ctx) {
+    return [
+      h('div', null, ctx.counter.value),
+      h('button', { onClick: ctx.add }, 'add')
+    ]
   }
 }
 
-const Child = {
-  render: () => {
-    return value.value ? (childVnode1 = h('div')) : (childVnode2 = h('span'))
-  }
-}
-
-render(h(Parent), root)
-// expect(root.innerHTML).toBe('<div></div>')
-// expect(parentVnode.el).toBe(childVnode1.el)
-debugger
-value.value = false
-console.log(value.value)
-// expect(root.innerHTML).toBe(`<span></span>`)
-// expect(parentVnode.el).toBe(childVnode2.el)
+createApp(Comp).mount(root)
+document.body.appendChild(root)
