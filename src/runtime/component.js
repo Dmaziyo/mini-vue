@@ -1,3 +1,4 @@
+import { compile } from '../compiler/compile'
 import { reactive, effect } from '../reactivity'
 import { queueJob } from './scheduler'
 import { normalizeVNode } from './vnode'
@@ -50,6 +51,15 @@ export function mountComponent(vnode, container, anchor, patch) {
   instance.ctx = {
     ...instance.props,
     ...instance.setupState
+  }
+  // 使用template的时候没有render,需要parse变成render函数
+  if (!originalComp.render && originalComp.template) {
+    let { template } = originalComp
+    if (template[0] === '#') {
+      const el = document.querySelector(template)
+      template = el ? el.innerHTML : ''
+    }
+    originalComp.render = new Function('_ctx', compile(template))
   }
 
   // 用于主动更新,即ctx里面的值发生变化,主动更新一次

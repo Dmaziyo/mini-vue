@@ -32,3 +32,6 @@ export function isArray(value) {
 export function isNumber(value) {
   return typeof value === 'number'
 }
+export function capitalize(value) {
+  return value[0].toUpperCase() + value.slice(1)
+}

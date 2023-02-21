@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="/dist/mini-vue.js"></script>
+    <script type="text/template" id="template">
+      <div>{{counter.value}}</div>
+      <button @click="add">add</button>
+    </script>
+    <script>
+      const {
+        createApp,
+        render,
+        h,
+        Text,
+        Fragment,
+        nextTick,
+        reactive,
+        ref,
+        computed,
+        effect,
+        compile
+      } = MiniVue
+      const instance = {
+        template: '#template',
+        setup() {
+          const counter = ref(0)
+          const add = () => {
+            counter.value++
+          }
+          return {
+            counter,
+            add
+          }
+        }
+      }
+      createApp(instance).mount('#app')
+    </script>
+  </body>
+</html>

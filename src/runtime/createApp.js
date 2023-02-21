@@ -9,11 +9,10 @@ export function createApp(rootComponent) {
         rootContainer = document.querySelector(rootContainer)
       }
 
-      //   当component为空时,直接继承rootContainer
+      //   当component为空时,直接读取template
       if (!isFunction(rootComponent.render) && !rootComponent.template) {
         rootComponent.template = rootContainer.innerHTML
       }
-      rootContainer.innerHTML = ''
 
       render(h(rootComponent), rootContainer)
     }
